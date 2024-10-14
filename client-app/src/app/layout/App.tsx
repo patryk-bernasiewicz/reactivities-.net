@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import "semantic-ui-css/semantic.min.css";
-import { Container } from "semantic-ui-react";
-import axios from "axios";
+import { Container, Loader } from "semantic-ui-react";
 import { v4 as uuid } from "uuid";
 
 import { Activity } from "../models/activity";
@@ -9,6 +8,7 @@ import ActivityDashboard from "../../features/activities/dashboard/ActivityDashb
 
 import Navbar from "./Navbar";
 import "./styles.css";
+import agent from "../api/agent";
 
 function App() {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -16,12 +16,13 @@ function App() {
     Activity | undefined
   >(undefined);
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    axios
-      .get<Activity[]>("http://localhost:5000/api/activities")
-      .then((response) => setActivities(response.data))
-      .catch((err) => console.error("Err!", err));
+    agent.Activities.list()
+      .then((data) => setActivities(data))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSelectedActivity = (activity: Activity) => {
@@ -31,29 +32,59 @@ function App() {
   const handleCancelSelectedActivity = () => setSelectedActivity(undefined);
 
   const handleCreateOrEditActivity = (submittedActivity: Activity) => {
+    setSubmitting(true);
     if (submittedActivity.id) {
-      setActivities((prevState) => [
-        ...prevState.filter((activity) => activity.id !== submittedActivity.id),
-        {
-          id: uuid(),
-          ...submittedActivity,
-        },
-      ]);
+      agent.Activities.update(submittedActivity)
+        .then(() => {
+          setActivities((prevState) => [
+            ...prevState.filter(
+              (activity) => activity.id !== submittedActivity.id
+            ),
+            submittedActivity,
+          ]);
+          setSelectedActivity(submittedActivity);
+        })
+        .catch((err) => console.error("[UPDATE] Error! ", err))
+        .finally(() => {
+          setTimeout(() => {
+            setSubmitting(false);
+            setEditMode(false);
+          }, 2500);
+        });
     } else {
-      setActivities((prevState) => [...prevState, submittedActivity]);
+      agent.Activities.create(submittedActivity)
+        .then(() => {
+          setActivities((prevState) => [
+            ...prevState,
+            { ...submittedActivity, id: uuid() },
+          ]);
+        })
+        .catch((err) => console.error("[CREATE] Error! ", err))
+        .finally(() => {
+          setSubmitting(false);
+          setEditMode(false);
+        });
     }
   };
 
   const handleDeleteActivity = (deletedActivity: Activity) => {
-    setActivities((prevState) =>
-      prevState.filter((activity) => activity.id !== deletedActivity.id)
-    );
-    setSelectedActivity((prevState) => {
-      if (prevState && prevState.id === deletedActivity.id) {
-        return undefined;
-      }
-      return prevState;
-    });
+    if (!deletedActivity.id) {
+      return;
+    }
+
+    setSubmitting(true);
+    agent.Activities.delete(deletedActivity.id)
+      .then(() => {
+        setActivities((prevState) =>
+          prevState.filter((activity) => activity.id !== deletedActivity.id)
+        );
+        if (selectedActivity && selectedActivity.id === deletedActivity.id) {
+          setSelectedActivity(undefined);
+          setEditMode(false);
+        }
+      })
+      .catch((err) => console.error("[DELETE] Error!", err))
+      .finally(() => setSubmitting(false));
   };
 
   const handleFormOpen = (activity?: Activity) => {
@@ -75,6 +106,10 @@ function App() {
     );
   }, [activities]);
 
+  if (loading) {
+    return <Loader content="Loading app" />;
+  }
+
   return (
     <div style={{ paddingTop: "6rem" }}>
       <Navbar openForm={handleFormOpen} />
@@ -89,6 +124,7 @@ function App() {
           editMode={editMode}
           openForm={handleFormOpen}
           closeForm={handleFormClose}
+          isSubmitting={submitting}
         />
       </Container>
     </div>

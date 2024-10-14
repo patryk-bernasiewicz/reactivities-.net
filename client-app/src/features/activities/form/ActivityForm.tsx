@@ -1,11 +1,12 @@
 import { Button, Form, Segment } from "semantic-ui-react";
 import { Activity } from "../../../app/models/activity";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 
 interface Props {
   activity?: Activity;
   handleCreateOrEditActivity: (activity: Activity) => void;
   closeForm: () => void;
+  isSubmitting?: boolean;
 }
 
 type FormFields = Omit<Record<keyof Activity, string>, "id">;
@@ -14,16 +15,26 @@ const ActivityForm = ({
   activity,
   handleCreateOrEditActivity,
   closeForm,
+  isSubmitting,
 }: Props) => {
-  const initialState: FormFields = {
-    title: activity?.title || "",
-    category: activity?.category || "",
-    city: activity?.city || "",
-    date: activity?.date || "",
-    description: activity?.description || "",
-    venue: activity?.venue || "",
-  };
+  const initialState: FormFields = useMemo(
+    () => ({
+      title: activity?.title || "",
+      category: activity?.category || "",
+      city: activity?.city || "",
+      date: activity?.date || "",
+      description: activity?.description || "",
+      venue: activity?.venue || "",
+    }),
+    [activity]
+  );
   const [formState, setFormState] = useState<FormFields>(initialState);
+
+  useEffect(() => {
+    if (!activity) {
+      setFormState(initialState);
+    }
+  }, [activity, initialState, setFormState]);
 
   const handleFieldChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -72,6 +83,7 @@ const ActivityForm = ({
         <Form.Input
           placeholder="Date"
           name="date"
+          type="date"
           value={formState.date}
           onChange={handleFieldChange}
         />
@@ -87,12 +99,21 @@ const ActivityForm = ({
           value={formState.venue}
           onChange={handleFieldChange}
         />
-        <Button floated="right" positive type="submit" content="Save" />
+        <Button
+          floated="right"
+          positive
+          type="submit"
+          content="Save"
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        />
         <Button
           floated="right"
           type="button"
           content="Cancel"
           onClick={closeForm}
+          loading={isSubmitting}
+          disabled={isSubmitting}
         />
       </Form>
     </Segment>
