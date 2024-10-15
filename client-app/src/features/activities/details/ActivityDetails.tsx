@@ -1,28 +1,24 @@
 import { Button, Card, Image } from "semantic-ui-react";
-import { Activity } from "../../../app/models/activity";
+import { useStore } from "../../../app/store/store";
 
-interface Props {
-  activity: Activity;
-  onCancelActivity: () => void;
-  handleDeleteActivity: (activity: Activity) => void;
-  openForm: (acitvity?: Activity) => void;
-}
+const ActivityDetails = () => {
+  const { activityStore } = useStore();
+  const { selectedActivity, clearSelectedActivity, deleteActivity, openForm } =
+    activityStore;
 
-const ActivityDetails = ({
-  activity,
-  onCancelActivity,
-  handleDeleteActivity,
-  openForm,
-}: Props) => {
+  if (!selectedActivity) {
+    return null;
+  }
+
   return (
     <Card>
-      <Image src={`/assets/categoryImages/${activity.category}.jpg`} />
+      <Image src={`/assets/categoryImages/${selectedActivity.category}.jpg`} />
       <Card.Content>
-        <Card.Header>{activity.title}</Card.Header>
+        <Card.Header>{selectedActivity.title}</Card.Header>
         <Card.Meta>
-          <span>{activity.date}</span>
+          <span>{selectedActivity.date}</span>
         </Card.Meta>
-        <Card.Description>{activity.description}</Card.Description>
+        <Card.Description>{selectedActivity.description}</Card.Description>
       </Card.Content>
       <Card.Content extra>
         <Button.Group width={2}>
@@ -30,19 +26,19 @@ const ActivityDetails = ({
             basic
             color="blue"
             content="Edit"
-            onClick={() => openForm(activity)}
+            onClick={() => openForm(selectedActivity)}
           />
           <Button
             basic
             color="grey"
             content="Cancel"
-            onClick={onCancelActivity}
+            onClick={clearSelectedActivity}
           />
           <Button
             basic
             color="red"
             content="Delete"
-            onClick={() => handleDeleteActivity(activity)}
+            onClick={() => deleteActivity(selectedActivity)}
           />
         </Button.Group>
       </Card.Content>

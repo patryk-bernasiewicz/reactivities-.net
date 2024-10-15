@@ -1,40 +1,31 @@
 import { Button, Form, Segment } from "semantic-ui-react";
 import { Activity } from "../../../app/models/activity";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
-
-interface Props {
-  activity?: Activity;
-  handleCreateOrEditActivity: (activity: Activity) => void;
-  closeForm: () => void;
-  isSubmitting?: boolean;
-}
+import { useStore } from "../../../app/store/store";
 
 type FormFields = Omit<Record<keyof Activity, string>, "id">;
 
-const ActivityForm = ({
-  activity,
-  handleCreateOrEditActivity,
-  closeForm,
-  isSubmitting,
-}: Props) => {
+const ActivityForm = () => {
+  const { activityStore } = useStore();
+  const { selectedActivity, createOrEdit, closeForm, loading } = activityStore;
   const initialState: FormFields = useMemo(
     () => ({
-      title: activity?.title || "",
-      category: activity?.category || "",
-      city: activity?.city || "",
-      date: activity?.date || "",
-      description: activity?.description || "",
-      venue: activity?.venue || "",
+      title: selectedActivity?.title || "",
+      category: selectedActivity?.category || "",
+      city: selectedActivity?.city || "",
+      date: selectedActivity?.date || "",
+      description: selectedActivity?.description || "",
+      venue: selectedActivity?.venue || "",
     }),
-    [activity]
+    [selectedActivity]
   );
   const [formState, setFormState] = useState<FormFields>(initialState);
 
   useEffect(() => {
-    if (!activity) {
+    if (!selectedActivity) {
       setFormState(initialState);
     }
-  }, [activity, initialState, setFormState]);
+  }, [selectedActivity, initialState, setFormState]);
 
   const handleFieldChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -53,8 +44,8 @@ const ActivityForm = ({
   };
 
   const handleSubmit = (data: FormFields) => {
-    handleCreateOrEditActivity({
-      id: activity ? activity.id : undefined,
+    createOrEdit({
+      id: selectedActivity ? selectedActivity.id : undefined,
       ...data,
     });
   };
@@ -104,16 +95,16 @@ const ActivityForm = ({
           positive
           type="submit"
           content="Save"
-          loading={isSubmitting}
-          disabled={isSubmitting}
+          loading={loading}
+          disabled={loading}
         />
         <Button
           floated="right"
           type="button"
           content="Cancel"
           onClick={closeForm}
-          loading={isSubmitting}
-          disabled={isSubmitting}
+          loading={loading}
+          disabled={loading}
         />
       </Form>
     </Segment>
