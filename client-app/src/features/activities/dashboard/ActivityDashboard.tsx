@@ -1,13 +1,22 @@
-import { Grid } from "semantic-ui-react";
+import { useEffect } from "react";
 import { observer } from "mobx-react-lite";
 
 import ActivityList from "./ActivityList";
-import ActivityDetails from "../details/ActivityDetails";
-import ActivityForm from "../form/ActivityForm";
+
 import { useStore } from "../../../app/store/store";
+import AppLoader from "../../../app/layout/AppLoader";
+import { Grid } from "semantic-ui-react";
 
 const ActivityDashboard = observer(() => {
   const { activityStore } = useStore();
+
+  useEffect(() => {
+    activityStore.loadActivities();
+  }, [activityStore]);
+
+  if (activityStore.loadingInitial) {
+    return <AppLoader content="Loading app" />;
+  }
 
   return (
     <Grid>
@@ -15,8 +24,7 @@ const ActivityDashboard = observer(() => {
         <ActivityList />
       </Grid.Column>
       <Grid.Column width={6}>
-        {activityStore.selectedActivity && <ActivityDetails />}
-        {activityStore.editMode && <ActivityForm />}
+        <h2>Activity filters</h2>
       </Grid.Column>
     </Grid>
   );

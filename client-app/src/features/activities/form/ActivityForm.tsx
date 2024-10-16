@@ -1,31 +1,48 @@
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button, Form, Segment } from "semantic-ui-react";
+import { observer } from "mobx-react-lite";
+
 import { Activity } from "../../../app/models/activity";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useStore } from "../../../app/store/store";
 
 type FormFields = Omit<Record<keyof Activity, string>, "id">;
 
-const ActivityForm = () => {
+const getInitialState = (activity?: Activity) => ({
+  title: activity?.title || "",
+  category: activity?.category || "",
+  city: activity?.city || "",
+  date: activity?.date || "",
+  description: activity?.description || "",
+  venue: activity?.venue || "",
+});
+
+const ActivityForm = observer(() => {
+  const { id = "" } = useParams();
+  const navigate = useNavigate();
+
   const { activityStore } = useStore();
-  const { selectedActivity, createOrEdit, closeForm, loading } = activityStore;
+  const { createOrEdit, loading, selectedActivity } = activityStore;
+
   const initialState: FormFields = useMemo(
-    () => ({
-      title: selectedActivity?.title || "",
-      category: selectedActivity?.category || "",
-      city: selectedActivity?.city || "",
-      date: selectedActivity?.date || "",
-      description: selectedActivity?.description || "",
-      venue: selectedActivity?.venue || "",
-    }),
+    () => getInitialState(selectedActivity),
     [selectedActivity]
   );
   const [formState, setFormState] = useState<FormFields>(initialState);
+  const prevInitialState = useRef(initialState);
 
   useEffect(() => {
-    if (!selectedActivity) {
+    activityStore.loadSingleActivity(id);
+  }, [activityStore, id]);
+
+  useEffect(() => {
+    if (
+      JSON.stringify(prevInitialState.current) !== JSON.stringify(initialState)
+    ) {
       setFormState(initialState);
+      prevInitialState.current = initialState;
     }
-  }, [selectedActivity, initialState, setFormState]);
+  }, [initialState]);
 
   const handleFieldChange = (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -43,12 +60,30 @@ const ActivityForm = () => {
     });
   };
 
-  const handleSubmit = (data: FormFields) => {
+  const handleSubmit = async (data: FormFields) => {
     createOrEdit({
       id: selectedActivity ? selectedActivity.id : undefined,
       ...data,
     });
+    if (id) {
+      navigate(`/activities/${id}`);
+    } else {
+      setFormState(initialState);
+    }
   };
+
+  const isValid = useMemo(
+    () =>
+      Object.keys(initialState).every((stateKey) => {
+        const stateKey2 = stateKey as keyof typeof initialState;
+        return (
+          stateKey2 in formState &&
+          typeof formState[stateKey2] === "string" &&
+          formState[stateKey2].length > 0
+        );
+      }),
+    [initialState, formState]
+  );
 
   return (
     <Segment clearing>
@@ -96,19 +131,18 @@ const ActivityForm = () => {
           type="submit"
           content="Save"
           loading={loading}
-          disabled={loading}
+          disabled={loading || !isValid}
         />
         <Button
           floated="right"
           type="button"
           content="Cancel"
-          onClick={closeForm}
           loading={loading}
           disabled={loading}
         />
       </Form>
     </Segment>
   );
-};
+});
 
 export default ActivityForm;
