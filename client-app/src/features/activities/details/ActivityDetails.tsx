@@ -1,17 +1,20 @@
 import { useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { Button, Card, Image } from "semantic-ui-react";
+import { useParams } from "react-router-dom";
+import { Grid } from "semantic-ui-react";
 import { observer } from "mobx-react-lite";
 
 import { useStore } from "../../../app/store/store";
 import AppLoader from "../../../app/layout/AppLoader";
 
+import ActivityDetailedHeader from "./ActivityDetailedHeader";
+import ActivityDetailedInfo from "./ActivityDetailedInfo";
+import ActivityDetailedChat from "./ActivityDetailedChat";
+import ActivityDetailedSidebar from "./ActivityDetailedSidebar";
+
 const ActivityDetails = observer(() => {
   const { id = "" } = useParams();
-  const navigate = useNavigate();
   const { activityStore } = useStore();
-  const { selectedActivity, loadSingleActivity, deleteActivity } =
-    activityStore;
+  const { selectedActivity, loadSingleActivity } = activityStore;
 
   useEffect(() => {
     loadSingleActivity(id);
@@ -22,44 +25,16 @@ const ActivityDetails = observer(() => {
   }
 
   return (
-    <Card fluid>
-      <Image src={`/assets/categoryImages/${selectedActivity.category}.jpg`} />
-      <Card.Content>
-        <Card.Header>{selectedActivity.title}</Card.Header>
-        <Card.Meta>
-          <span>{selectedActivity.date}</span>
-        </Card.Meta>
-        <Card.Description>{selectedActivity.description}</Card.Description>
-        <Card.Description>{selectedActivity.venue}</Card.Description>
-      </Card.Content>
-      <Card.Content extra>
-        <Button.Group width={2}>
-          <Button
-            basic
-            color="blue"
-            as={Link}
-            to={`/editActivity/${selectedActivity.id}`}
-            content="Edit"
-          />
-          <Button
-            basic
-            color="grey"
-            as={Link}
-            to="/activities"
-            content="Cancel"
-          />
-          <Button
-            basic
-            color="red"
-            content="Delete"
-            onClick={async () => {
-              await deleteActivity(selectedActivity);
-              navigate("/activities");
-            }}
-          />
-        </Button.Group>
-      </Card.Content>
-    </Card>
+    <Grid>
+      <Grid.Column width={10}>
+        <ActivityDetailedHeader activity={selectedActivity} />
+        <ActivityDetailedInfo activity={selectedActivity} />
+        <ActivityDetailedChat />
+      </Grid.Column>
+      <Grid.Column width={6}>
+        <ActivityDetailedSidebar />
+      </Grid.Column>
+    </Grid>
   );
 });
 

@@ -14,6 +14,7 @@ export default class ActivityStore {
   constructor() {
     makeAutoObservable(this, {
       sortedActivities: computed,
+      activitiesByDate: computed,
     });
   }
 
@@ -123,6 +124,29 @@ export default class ActivityStore {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
+  get activitiesByDate() {
+    return this.activities.reduce<{ [date: string]: Activity[] }>(
+      (acc, activity) => {
+        const date = activity.date;
+        if (!(date in acc)) {
+          acc[date] = [];
+        }
+        acc[date].push(activity);
+        return acc;
+      },
+      {}
+    );
+  }
+
+  get activitiesGroupedByDate() {
+    return Object.entries(this.activitiesByDate).reduce<
+      {
+        date: string;
+        activities: Activity[];
+      }[]
+    >((acc, [date, activities]) => [...acc, { date, activities }], []);
+  }
+
   private setLoadingStateInitial = (state: boolean) => {
     runInAction(() => {
       this.loadingInitial = state;
@@ -144,7 +168,6 @@ export default class ActivityStore {
   private updateActivity = (activity: Activity) => {
     runInAction(() => {
       this.activityRegistry.set(activity.id as string, activity);
-      console.log("====", this.activityRegistry.get(activity.id as string));
     });
   };
 }
